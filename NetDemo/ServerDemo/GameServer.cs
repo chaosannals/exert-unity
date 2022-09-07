@@ -64,6 +64,7 @@ class GameServer
         var state = new GameClientState();
         state.Socket = client;
         clients.Add(client, state);
+        Console.WriteLine($"accept: {client.RemoteEndPoint}");
     }
 
     public bool ReadFromClient(Socket socket)

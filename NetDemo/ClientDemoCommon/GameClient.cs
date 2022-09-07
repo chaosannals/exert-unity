@@ -1,19 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net.Sockets;
 
-namespace ClientDemo;
+namespace ClientDemoCommon;
 
-class GameClient
+public class GameClient
 {
     public string Host { get; init; }
     public int Port { get; init; }
     private Socket? socket;
     private byte[] buffer;
-
 
     public GameClient(string host="127.0.0.1", int port = 44444)
     {

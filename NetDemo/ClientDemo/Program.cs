@@ -1,4 +1,4 @@
-﻿using ClientDemo;
+﻿using ClientDemoCommon;
 
 Console.WriteLine("Game Client Start");
 

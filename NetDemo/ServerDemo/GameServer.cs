@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using Serilog;
 
 namespace ServerDemo;
 
@@ -12,14 +10,12 @@ class GameServer
 {
     public string Host { get; init; }
     public int Port { get; init; }
-    //private Socket? socket;
     private Dictionary<Socket, GameClientState> clients;
 
     public GameServer(int port=44444, string host="0.0.0.0")
     {
         Host = host;
         Port = port;
-        //socket = null;
         clients = new Dictionary<Socket, GameClientState>();
     }
 
@@ -29,6 +25,7 @@ class GameServer
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         var ipAddress = IPAddress.Parse(Host);
         var ipEndPoint = new IPEndPoint(ipAddress, Port);
+        socket.NoDelay = true;
         socket.Bind(ipEndPoint);
         socket.Listen(0);
 
@@ -58,15 +55,24 @@ class GameServer
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="socket"></param>
     public void ReadFromServer(Socket socket)
     {
         var client = socket.Accept();
         var state = new GameClientState();
         state.Socket = client;
         clients.Add(client, state);
-        Console.WriteLine($"accept: {client.RemoteEndPoint}");
+        Log.Information("accept: {0}", client.RemoteEndPoint);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="socket"></param>
+    /// <returns></returns>
     public bool ReadFromClient(Socket socket)
     {
         var state = clients[socket];
@@ -78,7 +84,7 @@ class GameServer
             {
                 socket.Close();
                 clients.Remove(socket);
-                Console.WriteLine("client read 0 bytes.");
+                Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
                 return false;
             }
 
@@ -97,7 +103,7 @@ class GameServer
         {
             socket.Close();
             clients.Remove(socket);
-            Console.WriteLine(e);
+            Log.Warning("serve loop exception: {0}", e);
             return false;
         }
     }

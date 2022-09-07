@@ -2,7 +2,7 @@
 
 Console.WriteLine("Game Client Start");
 
-var client = new GameClient();
+var client = new GameClient(44444);
 client.Connect();
 
 while (true)

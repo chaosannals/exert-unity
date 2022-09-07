@@ -13,6 +13,7 @@ var clients = Enumerable.Range(1, 10)
 
 // TODO 需要连接完成才能发送，这个等待要换成事件。
 Thread.Sleep(2000);
+
 while (true)
 {
     try

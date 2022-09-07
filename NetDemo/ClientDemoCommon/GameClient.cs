@@ -6,11 +6,14 @@ using System.Net.Sockets;
 
 namespace ClientDemoCommon;
 
-public class GameClient
+public class GameClient : IDisposable
 {
     public long Id { get; init; }
     public string Host { get; init; }
     public int Port { get; init; }
+
+    public bool IsClosing { get; private set; }
+
     private Socket? socket;
     private byte[] buffer;
     private ConcurrentQueue<GameDataBuffer> sendQueue;
@@ -20,6 +23,7 @@ public class GameClient
         Id = id;
         Host = host;
         Port = port;
+        IsClosing = false;
         socket = null;
         buffer = new byte[1024];
         sendQueue = new ConcurrentQueue<GameDataBuffer>();
@@ -35,6 +39,8 @@ public class GameClient
 
     public void Send(string text)
     {
+        if (IsClosing) return;
+
         byte[] sendBytes = Encoding.UTF8.GetBytes(text);
         var gdb = new GameDataBuffer(sendBytes);
         sendQueue.Enqueue(gdb);
@@ -57,7 +63,7 @@ public class GameClient
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Console.WriteLine($"on connect: {e}");
         }
     }
 
@@ -73,7 +79,7 @@ public class GameClient
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Console.WriteLine($"on client receive: {e}");
         }
     }
 
@@ -89,16 +95,41 @@ public class GameClient
             if (gdb.Size == 0)
             {
                 sendQueue.TryDequeue(out gdb);
-                gdb = sendQueue.First();
+                gdb = sendQueue.IsEmpty ? null : sendQueue.First();
             }
+
             if (gdb != null)
             {
                 sock!.BeginSend(gdb.Data, gdb.Head, gdb.Size, 0, OnSend, sock);
             }
+            else if (IsClosing)
+            {
+                sock!.Close();
+            }
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Console.WriteLine($"on send: {e}");
+        }
+    }
+
+    public void Close()
+    {
+        if (sendQueue.IsEmpty)
+        {
+            socket?.Close();
+        }
+        else
+        {
+            IsClosing = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (!IsClosing)
+        {
+            Close();
         }
     }
 }

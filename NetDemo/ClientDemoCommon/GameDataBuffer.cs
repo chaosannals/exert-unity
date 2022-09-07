@@ -12,6 +12,7 @@ public class GameDataBuffer
     public int Tail { get; set; }
 
     public int Size { get { return Tail - Head; } }
+    public int Capacity { get { return Data.Length; } }
 
     public byte[] Data { get; private set; }
 

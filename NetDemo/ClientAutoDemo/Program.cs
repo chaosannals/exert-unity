@@ -4,9 +4,9 @@ Console.WriteLine("Client Auto !");
 
 // TODO 数量太多等待会很长，要优化，目前 10 。
 var clients = Enumerable.Range(1, 10)
-    .ToDictionary(i => i, _ => 
+    .ToDictionary(i => i, i => 
     {
-        var r = new GameClient();
+        var r = new GameClient(i);
         r.Connect();
         return r;
     });

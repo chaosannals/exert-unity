@@ -8,14 +8,16 @@ namespace ClientDemoCommon;
 
 public class GameClient
 {
+    public long Id { get; init; }
     public string Host { get; init; }
     public int Port { get; init; }
     private Socket? socket;
     private byte[] buffer;
     private ConcurrentQueue<GameDataBuffer> sendQueue;
 
-    public GameClient(string host="127.0.0.1", int port = 44444)
+    public GameClient(long id, string host="127.0.0.1", int port = 44444)
     {
+        Id = id;
         Host = host;
         Port = port;
         socket = null;

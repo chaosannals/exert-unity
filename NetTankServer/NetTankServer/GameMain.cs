@@ -1,22 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Serilog;
 
 namespace NetTankServer;
 
 public class GameMain
 {
-    private GameRoomManager roomManager;
+    private GameServer server;
+    private ILogger logger;
 
-    public GameMain(GameRoomManager roomManager)
+    public GameMain(GameServer server, ILogger logger)
     {
-        this.roomManager = roomManager;
+        this.server = server;
+        this.logger = logger;
     }
 
     public void Run()
     {
-
+        logger.Information("run");
+        server.Serve();
     }
 }

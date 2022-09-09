@@ -1,0 +1,5 @@
+/.*/
+/Logs/
+.vsconfig
+*.csproj
+*.sln

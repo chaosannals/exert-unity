@@ -27,7 +27,7 @@ ioc.AddSingleton<ILogger>(op =>
                 fileSizeLimitBytes: int.Parse(cnf.GetSection("Logger:FileSizeLimitBytes")?.Value ?? "2000000"),
                 retainedFileCountLimit: int.Parse(cnf.GetSection("Logger:RetainedFileCountLimit")?.Value ?? "31"),
                 flushToDiskInterval: TimeSpan.FromSeconds(10),
-                outputTemplate: "[{Timestamp:yy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+                outputTemplate: cnf.GetSection("Logger:OutputTemplate")?.Value ?? "[{Timestamp:yy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
             )
             .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
             .CreateLogger();
@@ -40,6 +40,10 @@ ioc.AddSingleton(op =>
 {
     return new GamePlayerManager();
 });
+ioc.AddSingleton(op =>
+{
+    return new GameClientManager(44);
+});
 ioc.AddDbContext<GameDbContext>(opb =>
 {
     var connetionString = cnf.GetConnectionString("Main");
@@ -50,8 +54,9 @@ ioc.AddSingleton(op =>
 {
     var rm = op.GetRequiredService<GameRoomManager>();
     var pm = op.GetRequiredService<GamePlayerManager>();
+    var cm = op.GetRequiredService<GameClientManager>();
     var lgr = op.GetRequiredService<ILogger>();
-    return new GameServer(44444, rm, pm, lgr);
+    return new GameServer(44444, rm, pm, cm, lgr);
 });
 
 ioc.AddSingleton(op =>

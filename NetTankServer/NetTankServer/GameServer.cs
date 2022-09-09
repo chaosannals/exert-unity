@@ -11,8 +11,8 @@ public class GameServer
 {
     private GameRoomManager roomManager;
     private GamePlayerManager playerManager;
+    private GameClientManager clientManager;
     private ILogger logger;
-    private ConcurrentDictionary<Socket, GameClient> clients;
 
     public string Host { get; init; }
     public int Port { get; init; }
@@ -21,6 +21,7 @@ public class GameServer
         int port,
         GameRoomManager roomManager,
         GamePlayerManager playerManager,
+        GameClientManager clientManager,
         ILogger logger,
         string host="0.0.0.0"
     )
@@ -29,8 +30,8 @@ public class GameServer
         Host = host;
         this.roomManager = roomManager;
         this.playerManager = playerManager;
+        this.clientManager = clientManager;
         this.logger = logger;
-        clients = new ConcurrentDictionary<Socket, GameClient>();
     }
 
     /// <summary>
@@ -61,10 +62,11 @@ public class GameServer
         {
             checkRead.Clear();
             checkRead.Add(socket);
-            foreach (var cs in clients.Values)
-            {
-                checkRead.Add(cs.Socket);
-            }
+            checkRead.AddRange(clientManager.Sockets);
+            //foreach (var cs in clients.Values)
+            //{
+            //    checkRead.Add(cs.Socket);
+            //}
 
             Socket.Select(checkRead, null, null, 1000);
             foreach (var cr in checkRead)
@@ -84,14 +86,20 @@ public class GameServer
     public void ReadFromServer(Socket socket)
     {
         var client = socket.Accept();
-        var state = new GameClient(client);
-        clients.AddOrUpdate(client, state, (s, old) => old);
+        //var state = new GameClient(client);
+        //clients.AddOrUpdate(client, state, (s, old) => old);
+        clientManager.NewClient(client);
         logger.Information("accept: {0}", client.RemoteEndPoint);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="socket"></param>
+    /// <returns></returns>
     public bool ReadFromClient(Socket socket)
     {
-        var state = clients[socket];
+        var state = clientManager.GetClient(socket)!;
 
         try
         {
@@ -99,8 +107,7 @@ public class GameServer
             if (count == 0)
             {
                 socket.Close();
-                GameClient? client;
-                clients.Remove(socket, out client);
+                clientManager.DropClient(socket);
                 logger.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
                 return false;
             }
@@ -109,18 +116,17 @@ public class GameServer
             var endPoint = socket.RemoteEndPoint?.ToString() ?? "unknown";
             byte[] sendBytes = Encoding.UTF8.GetBytes(endPoint);
 
-            foreach (var cs in clients.Values)
+            clientManager.ForEach((sock, gc) =>
             {
-                cs.Socket?.Send(sendBytes);
-            }
+                gc.Socket?.Send(sendBytes);
+            });
 
             return true;
         }
         catch (Exception e)
         {
             socket.Close();
-            GameClient? client;
-            clients.Remove(socket, out client);
+            clientManager.DropClient(socket);
             logger.Warning("serve loop exception: {0}", e);
             return false;
         }

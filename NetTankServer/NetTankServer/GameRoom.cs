@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace NetTankServer;
+
+public class GameRoom
+{
+    public long Id { get; init; }
+
+    public GameRoom(long id)
+    {
+        Id = id;
+    }
+}

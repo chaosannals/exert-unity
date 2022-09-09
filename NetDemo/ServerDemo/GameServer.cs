@@ -29,6 +29,16 @@ class GameServer
         socket.Bind(ipEndPoint);
         socket.Listen(0);
 
+        Log.Information("listen: {0}", socket.LocalEndPoint);
+        var ipEntry = Dns.GetHostEntry(Dns.GetHostName());
+        foreach (var ip in ipEntry.AddressList)
+        {
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            {
+                Log.Information("listen: {0}:{1}", ip, Port);
+            }
+        }
+        
         var checkRead = new List<Socket>();
         
         while (true)

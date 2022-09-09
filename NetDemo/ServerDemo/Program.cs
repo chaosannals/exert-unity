@@ -15,7 +15,7 @@ try
             flushToDiskInterval: TimeSpan.FromSeconds(10),
             outputTemplate: "[{Timestamp:yy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
             )
-        .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Warning)
+        .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
         .CreateLogger();
 
     Log.Information("start server");

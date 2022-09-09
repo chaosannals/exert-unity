@@ -17,6 +17,7 @@ ioc.AddSingleton(op =>
     var main = new GameMain(roomManager);
     return main;
 });
+//ioc.AddDbContext<>
 
 var provider = ioc.BuildServiceProvider();
 var main = provider.GetRequiredService<GameMain>();

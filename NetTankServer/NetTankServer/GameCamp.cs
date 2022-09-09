@@ -6,11 +6,8 @@ using System.Threading.Tasks;
 
 namespace NetTankServer;
 
-public class GamePlayer
+public enum GameCamp
 {
-    public long Id { get; init; }
-
-    public long RoomId { get; set; }
-
-    public GameCamp Camp { get; set; }
+    Blue,
+    Red,
 }

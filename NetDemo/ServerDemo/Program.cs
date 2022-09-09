@@ -1,9 +1,16 @@
-﻿using Serilog;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Serilog.Events;
 using ServerDemo;
 
 try
 {
+    var ioc = new ServiceCollection();
+    ioc.AddSingleton(op =>
+    {
+        return new GameServer();
+    });
+
     Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
         .WriteTo.File
@@ -19,7 +26,8 @@ try
         .CreateLogger();
 
     Log.Information("start server");
-    var server = new GameServer();
+    var provider = ioc.BuildServiceProvider();
+    var server = provider.GetRequiredService<GameServer>();
     server.Serve();
 }
 catch (Exception e)

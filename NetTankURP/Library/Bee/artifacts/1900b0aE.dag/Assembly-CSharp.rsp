@@ -395,6 +395,8 @@
 -r:"Library/Bee/artifacts/1900b0aE.dag/UnityEngine.XR.LegacyInputHelpers.ref.dll"
 "Assets/Scripts/BaseBulletBehaviour.cs"
 "Assets/Scripts/BaseTankBehaviour.cs"
+"Assets/Scripts/NetBuffer.cs"
+"Assets/Scripts/NetClient.cs"
 "Assets/Scripts/SelfControllerBehaviour.cs"
 "Assets/Scripts/SyncControllerBehaviour.cs"
 "Assets/TutorialInfo/Scripts/Readme.cs"

@@ -26,6 +26,23 @@ public class NetBuffer
         Start += v;
     }
 
+    /// <summary>
+    /// TODO Start != 0 有 bug 待处理。
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="length"></param>
+    public void Write(byte[] data, int length)
+    {
+        if (length > (Capacity - Size))
+        {
+            var nb = new byte[Data.Length + length];
+            Array.Copy(Data, 0, nb, Start, Size);
+            Data = nb;
+        }
+        Array.Copy(data, 0, Data, End, length);
+        End += length;
+    }
+
     public override string ToString()
     {
         return $"[{Start} - {End}]({Size} / {Capacity})";

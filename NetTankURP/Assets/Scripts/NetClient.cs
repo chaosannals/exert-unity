@@ -4,39 +4,52 @@ using System.Net.Sockets;
 using System.Text;
 using System.Collections.Concurrent;
 
-
-public class NetClient : IDisposable
+public static class NetClient
 {
-    public string Host { get; private set; }
-    public int Port { get; private set; }
-    public bool IsClosing { get; private set; }
-    public Socket Sock { get; private set; }
+    public delegate void MessageHandler<T>(T message) where T : BaseMessage;
 
-    private byte[] buffer;
-    private ConcurrentQueue<NetBuffer> sendQueue;
 
-    public NetClient(Socket socket, string host="127.0.0.1", int port = 44444)
+    public static event MessageHandler<PlayerEnterMessage> PlayerEnter;
+    public static event MessageHandler<PlayerLeaveMessage> PlayerLeave;
+    public static event MessageHandler<PlayerListMessage> PlayerList;
+
+    public static event MessageHandler<TankFireMessage> TankFire;
+    public static event MessageHandler<TankHitMessage> TankHit;
+    public static event MessageHandler<TankMoveMessage> TankMove;
+
+
+    public static string Host { get; private set; }
+    public static int Port { get; private set; }
+    public static bool IsClosing { get; private set; }
+    public static Socket Sock { get; private set; }
+
+    private static byte[] buffer;
+    private static ConcurrentQueue<NetBuffer> sendQueue;
+    private static MessageHead readHead = null;
+
+    static NetClient()
     {
-        Host = host;
-        Port = port;
-        Sock = socket;
         buffer = new byte[1024];
         sendQueue = new ConcurrentQueue<NetBuffer>();
     }
 
-    public void Connect()
+    public static void Connect(string host = "127.0.0.1", int port = 44444)
     {
+        Host = host;
+        Port = port;
         Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         Sock.NoDelay = true;
         Sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         Sock.BeginConnect(Host, Port, OnConnect, Sock);
     }
 
-    public void Send(string text)
+
+    public static void Send<T>(T message) where T : BaseMessage
     {
         if (IsClosing) return;
 
-        byte[] sendBytes = Encoding.UTF8.GetBytes(text);
+        //byte[] sendBytes = Encoding.UTF8.GetBytes(text);
+        var sendBytes = message.Encode();
         var gdb = new NetBuffer(sendBytes);
         sendQueue.Enqueue(gdb);
         if (sendQueue.Count == 1)
@@ -45,12 +58,11 @@ public class NetClient : IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        
-    }
-
-    public void OnConnect(IAsyncResult ar)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="ar"></param>
+    public static void OnConnect(IAsyncResult ar)
     {
         try
         {
@@ -65,14 +77,25 @@ public class NetClient : IDisposable
         }
     }
 
-    public void OnReceive(IAsyncResult ar)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="ar"></param>
+    public static void OnReceive(IAsyncResult ar)
     {
         try
         {
             var sock = ar.AsyncState as Socket;
             var count = sock!.EndReceive(ar);
-            var text = Encoding.UTF8.GetString(buffer, 0, count);
-            Console.WriteLine($"client read: {text}");
+            //var text = Encoding.UTF8.GetString(buffer, 0, count);
+            //Console.WriteLine($"client read: {text}");
+
+            if (readHead == null)
+            {
+                readHead = BaseMessage.HeadOf(buffer);
+            }
+            // TODO
+
             sock!.BeginReceive(buffer, 0, buffer.Length, 0, OnReceive, sock!);
         }
         catch (Exception e)
@@ -81,7 +104,11 @@ public class NetClient : IDisposable
         }
     }
 
-    public void OnSend(IAsyncResult ar)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="ar"></param>
+    public static void OnSend(IAsyncResult ar)
     {
         try
         {

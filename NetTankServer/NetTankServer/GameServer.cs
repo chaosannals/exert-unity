@@ -1,6 +1,4 @@
 ﻿using Serilog;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -86,8 +84,6 @@ public class GameServer
     public void ReadFromServer(Socket socket)
     {
         var client = socket.Accept();
-        //var state = new GameClient(client);
-        //clients.AddOrUpdate(client, state, (s, old) => old);
         clientManager.NewClient(client);
         logger.Information("accept: {0}", client.RemoteEndPoint);
     }

@@ -6,6 +6,6 @@ using System.Threading.Tasks;
 
 namespace DemoCommon.Messages;
 
-public class GameLeaveMessage
+public class GameLeaveFromServerMessage
 {
 }

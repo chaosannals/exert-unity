@@ -9,7 +9,12 @@ public class SelfControllerBehaviour : MonoBehaviour
 
     private void Start()
     {
-        if (shot != null)
+        NetClient.PlayerEnter += (m) =>
+        {
+
+        };
+
+        if (shot != null && tank != null)
         {
             Camera.SetupCurrent(shot);
             transform.position = tank.transform.position;

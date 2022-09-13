@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace DemoCommon.Messages;
 
-public class GameBaseMessage
+public abstract class GameBaseMessage
 {
+
 }

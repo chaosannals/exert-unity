@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace DemoCommon.Messages;
 
-public class GameLeaveFromServerMessage
+public class GamePingMessage : GameBaseMessage
 {
+    public DateTime createAt = DateTime.Now;
 }

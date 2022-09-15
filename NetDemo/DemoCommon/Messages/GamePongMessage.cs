@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DemoCommon.Messages;
 
-public class GameEnterMessage : GameBaseMessage
+public class GamePongMessage : GameBaseMessage
 {
-    public long playerId;
+    public DateTime createAt = DateTime.Now;
 }

@@ -1,12 +1,13 @@
 ﻿using System;
 using ClientDemoCommon;
+using DemoCommon.Messages;
 
 Console.WriteLine("Client Auto !");
 
 // 因为 demo 是和服务器一起启动，所以先等待服务器初始化完成。
 Thread.Sleep(4000);
 
-var clients = Enumerable.Range(1, 4000)
+var clients = Enumerable.Range(1, 400)
     //.AsParallel()
     .ToDictionary(i => i, i => 
     {
@@ -25,8 +26,12 @@ while (true)
     {
         foreach (var client in clients)
         {
-            var d = DateTime.Now;
-            client.Value.Send($"client {client.Key} say: {d}");
+            client.Value.Send(new GameEnterMessage { playerId = client.Value.Id });
+        }
+
+        foreach (var client in clients)
+        {
+            client.Value.Send(new GamePingMessage());
         }
         var n = DateTime.Now;
         Console.WriteLine($"[{n}] clients say final.");

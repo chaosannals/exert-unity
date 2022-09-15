@@ -3,6 +3,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
+using DemoCommon;
+using DemoCommon.Messages;
 
 namespace ClientDemoCommon;
 
@@ -17,6 +19,7 @@ public class GameClient : IDisposable
     private Socket? socket;
     private byte[] buffer;
     private ConcurrentQueue<GameDataBuffer> sendQueue;
+    private GameMessageReader reader;
 
     public GameClient(long id, string host="127.0.0.1", int port = 44444)
     {
@@ -27,6 +30,7 @@ public class GameClient : IDisposable
         socket = null;
         buffer = new byte[1024];
         sendQueue = new ConcurrentQueue<GameDataBuffer>();
+        reader = new GameMessageReader();
     }
 
     public void Connect()
@@ -48,8 +52,19 @@ public class GameClient : IDisposable
         {
             socket?.BeginSend(gdb.Data, gdb.Head, gdb.Size, 0, OnSend, socket);
         }
-        
-        //socket?.Send(sendBytes);
+    }
+
+    public void Send<T>(T message) where T : GameBaseMessage
+    {
+        if (IsClosing) return;
+
+        byte[] sendBytes = message.Encode();
+        var gdb = new GameDataBuffer(sendBytes);
+        sendQueue.Enqueue(gdb);
+        if (sendQueue.Count == 1)
+        {
+            socket?.BeginSend(gdb.Data, gdb.Head, gdb.Size, 0, OnSend, socket);
+        }
     }
 
     public void OnConnect(IAsyncResult ar)
@@ -73,8 +88,14 @@ public class GameClient : IDisposable
         {
             var sock = ar.AsyncState as Socket;
             var count = sock!.EndReceive(ar);
-            var text = Encoding.UTF8.GetString(buffer, 0, count);
-            Console.WriteLine($"client read: {text}");
+
+            var m = reader.Read(buffer, 0, count);
+
+            if (m != null)
+            {
+                Console.WriteLine("client {0}", m.Head.kindName);
+            }
+
             sock!.BeginReceive(buffer, 0, buffer.Length, 0, OnReceive, sock!);
         }
         catch (Exception e)

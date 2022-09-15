@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DemoCommon.Messages;
 
-public class GameEnterMessage : GameBaseMessage
+public class GameLeaveMessage
 {
-    public long playerId;
+
 }

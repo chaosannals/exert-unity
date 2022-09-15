@@ -4,6 +4,8 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using Serilog;
+using DemoCommon;
+using DemoCommon.Messages;
 
 namespace ServerDemo;
 
@@ -40,33 +42,6 @@ class GameServer
             }
         }
 
-        //Task.Run(() =>
-        //{
-        //    var checkRead = new List<Socket>();
-
-        //    while (true)
-        //    {
-        //        checkRead.Clear();
-        //        foreach (var cs in clients.Values)
-        //        {
-        //            checkRead.Add(cs.Socket!);
-        //        }
-
-        //        if (checkRead.Count > 0)
-        //        {
-        //            Socket.Select(checkRead, null, null, 1000);
-        //            foreach (var cr in checkRead)
-        //            {
-        //                ReadFromClient(cr);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Task.Yield();
-        //        }
-        //    }
-        //}).ConfigureAwait(false);
-
         try
         {
             socket.BeginAccept(OnAccept, socket);
@@ -99,36 +74,6 @@ class GameServer
         {
             Log.Information("{0}", e);
         }
-
-        //while(true)
-        //{
-        //    ReadFromServer(socket);
-        //}
-        
-        //var checkRead = new List<Socket>();
-        
-        //while (true)
-        //{
-        //    checkRead.Clear();
-        //    checkRead.Add(socket);
-        //    foreach (var cs in clients.Values)
-        //    {
-        //        checkRead.Add(cs.Socket!);
-        //    }
-
-        //    Socket.Select(checkRead, null, null, 1000);
-        //    foreach (var cr in checkRead)
-        //    {
-        //        if (cr == socket)
-        //        {
-        //            ReadFromServer(cr);
-        //        }
-        //        else
-        //        {
-        //            ReadFromClient(cr);
-        //        }
-        //    }
-        //}
     }
 
     public void OnAccept(IAsyncResult ar)
@@ -139,20 +84,6 @@ class GameServer
         var state = new GameClientState();
         state.Socket = client;
         clients.TryAdd(client, state);
-        Log.Information("[{0}] accept: {1}", clients.Count, client.RemoteEndPoint);
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="socket"></param>
-    public void ReadFromServer(Socket socket)
-    {
-        var client = socket.Accept();
-        var state = new GameClientState();
-        state.Socket = client;
-        clients.TryAdd(client, state);
-        //clients.Add(client, state);
         Log.Information("[{0}] accept: {1}", clients.Count, client.RemoteEndPoint);
     }
 
@@ -171,20 +102,17 @@ class GameServer
             if (count == 0)
             {
                 socket.Close();
-                //clients.Remove(socket);
                 GameClientState? gcs;
                 clients.Remove(socket, out gcs);
                 Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
                 return false;
             }
 
-            // TODO
-            var endPoint = socket.RemoteEndPoint?.ToString() ?? "unknown";
-            byte[] sendBytes = Encoding.UTF8.GetBytes(endPoint);
+            var m = state.Reader.Read(state.Buffer, 0, count);
 
-            foreach (var cs in clients.Values)
+            if (m != null)
             {
-                cs.Socket?.Send(sendBytes);
+                Dispatch(state, m);
             }
 
             return true;
@@ -192,11 +120,33 @@ class GameServer
         catch (Exception e)
         {
             socket.Close();
-            //clients.Remove(socket);
             GameClientState? gcs;
             clients.Remove(socket, out gcs);
             Log.Warning("serve loop exception: {0}", e);
             return false;
+        }
+    }
+
+    public void Dispatch(GameClientState client, GameMessagePack m)
+    {
+        var socket = client.Socket!;
+        switch (m.Head.kindName)
+        {
+            case nameof(GamePingMessage):
+                //Log.Information("from: {0} msg: {1}", socket.RemoteEndPoint, m.Head.kindName);
+                socket.Send(new GamePongMessage().Encode());
+                break;
+            case nameof(GameEnterMessage):
+                foreach (var cs in clients)
+                {
+                    if (cs.Value.Socket! != socket)
+                    {
+                        cs.Value.Socket?.Send(m.Body.Encode());
+                    }
+                }
+                break;
+            default:
+                break;
         }
     }
 }

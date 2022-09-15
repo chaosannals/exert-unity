@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DemoCommon.Messages;
+namespace ServerDemo;
 
-public class GameEnterMessage : GameBaseMessage
+public class GameDispatcher
 {
-    public long playerId;
+
 }

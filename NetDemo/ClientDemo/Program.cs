@@ -1,5 +1,7 @@
 ﻿using ClientDemoCommon;
 
+Thread.Sleep(2000);
+
 Console.WriteLine("Game Client Start");
 
 var client = new GameClient(44444);

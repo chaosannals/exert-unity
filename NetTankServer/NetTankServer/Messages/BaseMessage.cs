@@ -13,6 +13,7 @@ public abstract class BaseMessage
 {
     public const string MAGIC = "TANK";
     public static readonly byte[] MagicBytes = Encoding.UTF8.GetBytes(MAGIC);
+    public static readonly int HeadSize = MagicBytes.Length + 8;
 
     public byte[] Encode()
     {

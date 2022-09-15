@@ -1,13 +1,18 @@
-﻿using ClientDemoCommon;
+﻿using System;
+using ClientDemoCommon;
 
 Console.WriteLine("Client Auto !");
 
-// TODO 数量太多等待会很长，要优化，目前 10 。
-var clients = Enumerable.Range(1, 10)
+// 因为 demo 是和服务器一起启动，所以先等待服务器初始化完成。
+Thread.Sleep(4000);
+
+var clients = Enumerable.Range(1, 4000)
+    //.AsParallel()
     .ToDictionary(i => i, i => 
     {
         var r = new GameClient(i);
         r.Connect();
+        Thread.Sleep(100);
         return r;
     });
 

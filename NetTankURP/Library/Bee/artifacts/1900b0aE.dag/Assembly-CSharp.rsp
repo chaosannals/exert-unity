@@ -29,7 +29,6 @@
 -define:PLATFORM_ARCH_64
 -define:UNITY_64
 -define:UNITY_INCLUDE_TESTS
--define:UNITY_ANALYTICS
 -define:USE_SEARCH_ENGINE_API
 -define:USE_SEARCH_TABLE
 -define:USE_SEARCH_MODULE
@@ -398,14 +397,17 @@
 "Assets/Scripts/BattleUIBehaviour.cs"
 "Assets/Scripts/LoginUIBehaviour.cs"
 "Assets/Scripts/Messages/BaseMessage.cs"
+"Assets/Scripts/Messages/MessageHead.cs"
 "Assets/Scripts/Messages/PlayerEnterMessage.cs"
 "Assets/Scripts/Messages/PlayerLeaveMessage.cs"
 "Assets/Scripts/Messages/PlayerListMessage.cs"
+"Assets/Scripts/Messages/PlayerLoginMessage.cs"
 "Assets/Scripts/Messages/TankFireMessage.cs"
 "Assets/Scripts/Messages/TankHitMessage.cs"
 "Assets/Scripts/Messages/TankMoveMessage.cs"
 "Assets/Scripts/NetBuffer.cs"
 "Assets/Scripts/NetClient.cs"
+"Assets/Scripts/NetMessageBuffer.cs"
 "Assets/Scripts/SelfControllerBehaviour.cs"
 "Assets/Scripts/SyncControllerBehaviour.cs"
 "Assets/TutorialInfo/Scripts/Readme.cs"

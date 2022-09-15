@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using NetTankServer.Messages;
+using Serilog;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -61,10 +62,6 @@ public class GameServer
             checkRead.Clear();
             checkRead.Add(socket);
             checkRead.AddRange(clientManager.Sockets);
-            //foreach (var cs in clients.Values)
-            //{
-            //    checkRead.Add(cs.Socket);
-            //}
 
             Socket.Select(checkRead, null, null, 1000);
             foreach (var cr in checkRead)
@@ -108,14 +105,17 @@ public class GameServer
                 return false;
             }
 
-            // TODO
-            var endPoint = socket.RemoteEndPoint?.ToString() ?? "unknown";
-            byte[] sendBytes = Encoding.UTF8.GetBytes(endPoint);
+            var m = state.Reader.Read(state.Buffer, 0, count);
 
-            clientManager.ForEach((sock, gc) =>
+            if (m != null)
             {
-                gc.Socket?.Send(sendBytes);
-            });
+                var sendBytes = m.Body.Encode();
+
+                clientManager.ForEach((sock, gc) =>
+                {
+                    gc.Socket?.Send(sendBytes);
+                });
+            }
 
             return true;
         }

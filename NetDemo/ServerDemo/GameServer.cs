@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -10,13 +11,13 @@ class GameServer
 {
     public string Host { get; init; }
     public int Port { get; init; }
-    private Dictionary<Socket, GameClientState> clients;
+    private ConcurrentDictionary<Socket, GameClientState> clients;
 
     public GameServer(int port=44444, string host="0.0.0.0")
     {
         Host = host;
         Port = port;
-        clients = new Dictionary<Socket, GameClientState>();
+        clients = new ConcurrentDictionary<Socket, GameClientState>();
     }
 
 
@@ -38,31 +39,107 @@ class GameServer
                 Log.Information("listen: {0}:{1}", ip, Port);
             }
         }
-        
-        var checkRead = new List<Socket>();
-        
-        while (true)
-        {
-            checkRead.Clear();
-            checkRead.Add(socket);
-            foreach (var cs in clients.Values)
-            {
-                checkRead.Add(cs.Socket!);
-            }
 
-            Socket.Select(checkRead, null, null, 1000);
-            foreach (var cr in checkRead)
+        //Task.Run(() =>
+        //{
+        //    var checkRead = new List<Socket>();
+
+        //    while (true)
+        //    {
+        //        checkRead.Clear();
+        //        foreach (var cs in clients.Values)
+        //        {
+        //            checkRead.Add(cs.Socket!);
+        //        }
+
+        //        if (checkRead.Count > 0)
+        //        {
+        //            Socket.Select(checkRead, null, null, 1000);
+        //            foreach (var cr in checkRead)
+        //            {
+        //                ReadFromClient(cr);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            Task.Yield();
+        //        }
+        //    }
+        //}).ConfigureAwait(false);
+
+        try
+        {
+            socket.BeginAccept(OnAccept, socket);
+
+            var checkRead = new List<Socket>();
+
+            while (true)
             {
-                if (cr == socket)
+                checkRead.Clear();
+                foreach (var cs in clients.Values)
                 {
-                    ReadFromServer(cr);
+                    checkRead.Add(cs.Socket!);
+                }
+
+                if (checkRead.Count > 0)
+                {
+                    Socket.Select(checkRead, null, null, 1000);
+                    foreach (var cr in checkRead)
+                    {
+                        ReadFromClient(cr);
+                    }
                 }
                 else
                 {
-                    ReadFromClient(cr);
+                    Thread.Yield();
                 }
             }
         }
+        catch (Exception e)
+        {
+            Log.Information("{0}", e);
+        }
+
+        //while(true)
+        //{
+        //    ReadFromServer(socket);
+        //}
+        
+        //var checkRead = new List<Socket>();
+        
+        //while (true)
+        //{
+        //    checkRead.Clear();
+        //    checkRead.Add(socket);
+        //    foreach (var cs in clients.Values)
+        //    {
+        //        checkRead.Add(cs.Socket!);
+        //    }
+
+        //    Socket.Select(checkRead, null, null, 1000);
+        //    foreach (var cr in checkRead)
+        //    {
+        //        if (cr == socket)
+        //        {
+        //            ReadFromServer(cr);
+        //        }
+        //        else
+        //        {
+        //            ReadFromClient(cr);
+        //        }
+        //    }
+        //}
+    }
+
+    public void OnAccept(IAsyncResult ar)
+    {
+        var socket = ar.AsyncState as Socket;
+        var client = socket!.EndAccept(ar);
+        socket.BeginAccept(OnAccept, socket);
+        var state = new GameClientState();
+        state.Socket = client;
+        clients.TryAdd(client, state);
+        Log.Information("[{0}] accept: {1}", clients.Count, client.RemoteEndPoint);
     }
 
     /// <summary>
@@ -74,8 +151,9 @@ class GameServer
         var client = socket.Accept();
         var state = new GameClientState();
         state.Socket = client;
-        clients.Add(client, state);
-        Log.Information("accept: {0}", client.RemoteEndPoint);
+        clients.TryAdd(client, state);
+        //clients.Add(client, state);
+        Log.Information("[{0}] accept: {1}", clients.Count, client.RemoteEndPoint);
     }
 
     /// <summary>
@@ -93,7 +171,9 @@ class GameServer
             if (count == 0)
             {
                 socket.Close();
-                clients.Remove(socket);
+                //clients.Remove(socket);
+                GameClientState? gcs;
+                clients.Remove(socket, out gcs);
                 Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
                 return false;
             }
@@ -112,7 +192,9 @@ class GameServer
         catch (Exception e)
         {
             socket.Close();
-            clients.Remove(socket);
+            //clients.Remove(socket);
+            GameClientState? gcs;
+            clients.Remove(socket, out gcs);
             Log.Warning("serve loop exception: {0}", e);
             return false;
         }

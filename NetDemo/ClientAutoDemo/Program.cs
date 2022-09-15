@@ -7,11 +7,26 @@ Console.WriteLine("Client Auto !");
 // 因为 demo 是和服务器一起启动，所以先等待服务器初始化完成。
 Thread.Sleep(4000);
 
-var clients = Enumerable.Range(1, 400)
+var clients = Enumerable.Range(1, 4)
     //.AsParallel()
     .ToDictionary(i => i, i => 
     {
         var r = new GameClient(i);
+        r.ReceiveDispatch += (c, m) =>
+        {
+            switch (m.Head.kindName)
+            {
+                case nameof(GameEnterMessage):
+                    var em = m.Body as GameEnterMessage;
+                    Console.WriteLine($"pid; {em?.playerId}");
+                    break;
+                case nameof(GamePongMessage):
+                    Console.WriteLine($"pong");
+                    break;
+                default:
+                    break;
+            }
+        };
         r.Connect();
         Thread.Sleep(100);
         return r;
@@ -26,6 +41,7 @@ while (true)
     {
         foreach (var client in clients)
         {
+            Console.WriteLine($"send pid: {client.Value.Id}");
             client.Value.Send(new GameEnterMessage { playerId = client.Value.Id });
         }
 

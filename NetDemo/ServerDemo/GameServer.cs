@@ -137,6 +137,8 @@ class GameServer
                 socket.Send(new GamePongMessage().Encode());
                 break;
             case nameof(GameEnterMessage):
+                var em = m.Body as GameEnterMessage;
+                Log.Information("enter: {0} pid: {1}", socket.RemoteEndPoint, em?.playerId);
                 foreach (var cs in clients)
                 {
                     if (cs.Value.Socket! != socket)

@@ -17,7 +17,7 @@ public abstract class GameBaseMessage
     {
         var kind = Encoding.UTF8.GetBytes(GetType().Name);
         var ksize = ToBigEndian(kind.Length);
-        var json = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this));
+        var json = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this, GetType()));
         var jsize = ToBigEndian(json.Length);
         var result = new byte[MagicBytes.Length + ksize.Length + jsize.Length + kind.Length + json.Length];
         Array.Copy(MagicBytes, 0, result, 0, MagicBytes.Length);

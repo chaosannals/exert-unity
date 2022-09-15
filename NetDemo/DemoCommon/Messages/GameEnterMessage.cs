@@ -8,5 +8,5 @@ namespace DemoCommon.Messages;
 
 public class GameEnterMessage : GameBaseMessage
 {
-    public long playerId;
+    public long playerId { get; set; }
 }

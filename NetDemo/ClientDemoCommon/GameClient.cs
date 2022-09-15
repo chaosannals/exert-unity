@@ -8,6 +8,8 @@ using DemoCommon.Messages;
 
 namespace ClientDemoCommon;
 
+public delegate void ReceiveDispatchHandler(GameClient client, GameMessagePack message);
+
 public class GameClient : IDisposable
 {
     public long Id { get; init; }
@@ -20,6 +22,8 @@ public class GameClient : IDisposable
     private byte[] buffer;
     private ConcurrentQueue<GameDataBuffer> sendQueue;
     private GameMessageReader reader;
+
+    public event ReceiveDispatchHandler? ReceiveDispatch;
 
     public GameClient(long id, string host="127.0.0.1", int port = 44444)
     {
@@ -41,24 +45,12 @@ public class GameClient : IDisposable
         socket.BeginConnect(Host, Port, OnConnect, socket);
     }
 
-    public void Send(string text)
-    {
-        if (IsClosing) return;
-
-        byte[] sendBytes = Encoding.UTF8.GetBytes(text);
-        var gdb = new GameDataBuffer(sendBytes);
-        sendQueue.Enqueue(gdb);
-        if (sendQueue.Count == 1)
-        {
-            socket?.BeginSend(gdb.Data, gdb.Head, gdb.Size, 0, OnSend, socket);
-        }
-    }
-
     public void Send<T>(T message) where T : GameBaseMessage
     {
         if (IsClosing) return;
 
         byte[] sendBytes = message.Encode();
+        //Console.WriteLine(Encoding.UTF8.GetString(sendBytes));
         var gdb = new GameDataBuffer(sendBytes);
         sendQueue.Enqueue(gdb);
         if (sendQueue.Count == 1)
@@ -93,7 +85,7 @@ public class GameClient : IDisposable
 
             if (m != null)
             {
-                Console.WriteLine("client {0}", m.Head.kindName);
+                ReceiveDispatch?.Invoke(this, m);
             }
 
             sock!.BeginReceive(buffer, 0, buffer.Length, 0, OnReceive, sock!);

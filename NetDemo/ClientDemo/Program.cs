@@ -1,4 +1,5 @@
 ﻿using ClientDemoCommon;
+using DemoCommon.Messages;
 
 Thread.Sleep(2000);
 
@@ -14,5 +15,16 @@ while (true)
     {
         break;
     }
-    client.Send(cmd ?? "empty");
+
+    switch (cmd)
+    {
+        case nameof(GameEnterMessage):
+            client?.Send(new GameEnterMessage() { playerId = 123 });
+            break;
+        case nameof(GamePingMessage):
+            client?.Send(new GamePingMessage());
+            break;
+        default:
+            break;
+    }
 }

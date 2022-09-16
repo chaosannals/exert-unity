@@ -92,7 +92,7 @@ public class GameServer
 
         try
         {
-            int count = await socket.ReceiveAsync(state.Buffer, SocketFlags.Partial);
+            int count = await socket.ReceiveAsync(state.Buffer, SocketFlags.None);
             if (count == 0)
             {
                 socket.Close();

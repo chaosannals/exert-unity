@@ -4,9 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ServerDemo;
+namespace DemoCommon.Messages;
 
-public class DemoServer
+public class GameListMessage
 {
-
 }

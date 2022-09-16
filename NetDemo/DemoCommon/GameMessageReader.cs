@@ -24,11 +24,108 @@ public class GameMessageReader
         TotalLength = null;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="start"></param>
+    /// <param name="length"></param>
+    /// <returns></returns>
     public GameMessagePack? Read(byte[] data, int start, int length)
     {
         try
         {
             Buffer.Write(data, start, length);
+
+            if (Head is null)
+            {
+                Head = GameBaseMessage.HeadOf(Buffer.Data);
+                ReadHead?.Invoke(Head);
+            }
+
+            if (Head != null)
+            {
+                TotalLength = GameBaseMessage.HeadSize + Head.Value.kindSize + Head.Value.jsonSize;
+            }
+
+            if (TotalLength != null && Buffer.Size >= TotalLength)
+            {
+                var r = GameBaseMessage.BodyOf(Head!.Value, Buffer.Data);
+                ReadBody?.Invoke(r as GameBaseMessage);
+
+                if (r != null)
+                {
+                    Buffer.Drop(TotalLength.Value);
+                    var result = new GameMessagePack(Head!.Value, (r as GameBaseMessage)!);
+                    Head = null;
+                    TotalLength = null;
+                    return result;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Error?.Invoke(Buffer, Head, e);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="write"></param>
+    /// <returns></returns>
+    public GameMessagePack? Read(Func<Memory<byte>, int> write)
+    {
+        try
+        {
+            Buffer.Write(write);
+
+            if (Head is null)
+            {
+                Head = GameBaseMessage.HeadOf(Buffer.Data);
+                ReadHead?.Invoke(Head);
+            }
+
+            if (Head != null)
+            {
+                TotalLength = GameBaseMessage.HeadSize + Head.Value.kindSize + Head.Value.jsonSize;
+            }
+
+            if (TotalLength != null && Buffer.Size >= TotalLength)
+            {
+                var r = GameBaseMessage.BodyOf(Head!.Value, Buffer.Data);
+                ReadBody?.Invoke(r as GameBaseMessage);
+
+                if (r != null)
+                {
+                    Buffer.Drop(TotalLength.Value);
+                    var result = new GameMessagePack(Head!.Value, (r as GameBaseMessage)!);
+                    Head = null;
+                    TotalLength = null;
+                    return result;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Error?.Invoke(Buffer, Head, e);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="write"></param>
+    /// <returns></returns>
+    public async Task<GameMessagePack?> ReadAsync(Func<Memory<byte>, ValueTask<int>> write)
+    {
+        try
+        {
+            await Buffer.WriteAsync(write);
 
             if (Head is null)
             {

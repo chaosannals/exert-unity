@@ -32,6 +32,34 @@ public class GameMessageBuffer
         Size += length;
     }
 
+    public int Write(Func<Memory<byte>, int> write, int min = 1024)
+    {
+        if (Remain <= min)
+        {
+            var ns = (Capacity + min);
+            var nb = new byte[ns];
+            Array.Copy(Data, 0, nb, 0, Size);
+            Data = nb;
+        }
+        var r = write(new Memory<byte>(Data, Size, Remain));
+        Size += r;
+        return r;
+    }
+
+    public async ValueTask<int> WriteAsync(Func<Memory<byte>, ValueTask<int>> write, int min=1024)
+    {
+        if (Remain <= min)
+        {
+            var ns = (Capacity + min);
+            var nb = new byte[ns];
+            Array.Copy(Data, 0, nb, 0, Size);
+            Data = nb;
+        }
+        var r = await write(new Memory<byte>(Data, Size, Remain));
+        Size += r;
+        return r;
+    }
+
     public void Drop(int size)
     {
         Size -= size;

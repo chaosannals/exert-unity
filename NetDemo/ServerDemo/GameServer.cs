@@ -102,17 +102,30 @@ class GameServer
         
         try
         {
-            int count = await socket.ReceiveAsync(state.Buffer, SocketFlags.None);
-            //int count = socket.Receive(state.Buffer);
-            if (count == 0)
-            {
-                socket.Close();
-                GameClientState? gcs;
-                clients.Remove(socket, out gcs);
-                Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
-            }
+            //int count = await socket.ReceiveAsync(state.Buffer, SocketFlags.None);
+            ////int count = socket.Receive(state.Buffer);
+            //if (count == 0)
+            //{
+            //    socket.Close();
+            //    GameClientState? gcs;
+            //    clients.Remove(socket, out gcs);
+            //    Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
+            //}
 
-            var m = state.Reader.Read(state.Buffer, 0, count);
+            //var m = state.Reader.Read(state.Buffer, 0, count);
+
+            var m = await state.Reader.ReadAsync(async (buffer) =>
+            {
+                int count = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                if (count == 0)
+                {
+                    socket.Close();
+                    GameClientState? gcs;
+                    clients.Remove(socket, out gcs);
+                    Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
+                }
+                return count;
+            });
 
             if (m != null)
             {

@@ -26,6 +26,8 @@ public class NetPackBuffer
         Coder = new NetPackJsonCoder();
     }
 
+    public NetPackBuffer() : this(new byte[1024], 0) { }
+
     public void Write(byte[] data, int start, int length)
     {
         if (length > Remain)
@@ -37,6 +39,34 @@ public class NetPackBuffer
         }
         Array.Copy(data, start, Data, Size, length);
         Size += length;
+    }
+
+    public int Write(Func<Memory<byte>, int> write, int min = 1024)
+    {
+        if (Remain <= min)
+        {
+            var ns = (Capacity + min);
+            var nb = new byte[ns];
+            Array.Copy(Data, 0, nb, 0, Size);
+            Data = nb;
+        }
+        var r = write(new Memory<byte>(Data, Size, Remain));
+        Size += r;
+        return r;
+    }
+
+    public async ValueTask<int> WriteAsync(Func<Memory<byte>, ValueTask<int>> write, int min = 1024)
+    {
+        if (Remain <= min)
+        {
+            var ns = (Capacity + min);
+            var nb = new byte[ns];
+            Array.Copy(Data, 0, nb, 0, Size);
+            Data = nb;
+        }
+        var r = await write(new Memory<byte>(Data, Size, Remain));
+        Size += r;
+        return r;
     }
 
     public NetPack? Read()

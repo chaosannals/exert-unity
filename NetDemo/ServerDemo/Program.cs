@@ -41,7 +41,8 @@ try
     Log.Information("start server");
     var provider = ioc.BuildServiceProvider();
     var server = provider.GetRequiredService<GameServer>();
-    server.Serve();
+    server.Serve().Wait();
+    //server.Serve();
 }
 catch (Exception e)
 {

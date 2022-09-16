@@ -36,7 +36,7 @@ public class GameServer
     /// <summary>
     /// 
     /// </summary>
-    public void Serve()
+    public async Task Serve()
     {
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         var ipAddress = IPAddress.Parse(Host);
@@ -55,34 +55,30 @@ public class GameServer
             }
         }
 
+        socket.BeginAccept(OnAccept, socket);
+
         var checkRead = new List<Socket>();
 
         while (true)
         {
             checkRead.Clear();
-            checkRead.Add(socket);
             checkRead.AddRange(clientManager.Sockets);
 
-            Socket.Select(checkRead, null, null, 1000);
-            foreach (var cr in checkRead)
+            if (checkRead.Count > 0)
             {
-                if (cr == socket)
-                {
-                    ReadFromServer(cr);
-                }
-                else
-                {
-                    ReadFromClient(cr);
-                }
+                Socket.Select(checkRead, null, null, 1000);
+                await Parallel.ForEachAsync(checkRead, ReadFromClient);
             }
         }
     }
 
-    public void ReadFromServer(Socket socket)
+    public void OnAccept(IAsyncResult ar)
     {
-        var client = socket.Accept();
-        clientManager.NewClient(client);
-        logger.Information("accept: {0}", client.RemoteEndPoint);
+        var server = ar.AsyncState as Socket;
+        var socket = server!.EndAccept(ar);
+        server.BeginAccept(OnAccept, server);
+        var client = clientManager.NewClient(socket);
+        Log.Information("[{0}] accept: {1}", client.Id, socket.RemoteEndPoint);
     }
 
     /// <summary>
@@ -90,19 +86,18 @@ public class GameServer
     /// </summary>
     /// <param name="socket"></param>
     /// <returns></returns>
-    public bool ReadFromClient(Socket socket)
+    public async ValueTask ReadFromClient(Socket socket, CancellationToken cancellationToken)
     {
         var state = clientManager.GetClient(socket)!;
 
         try
         {
-            int count = socket.Receive(state.Buffer);
+            int count = await socket.ReceiveAsync(state.Buffer, SocketFlags.Partial);
             if (count == 0)
             {
                 socket.Close();
                 clientManager.DropClient(socket);
                 logger.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
-                return false;
             }
 
             var m = state.Reader.Read(state.Buffer, 0, count);
@@ -116,15 +111,12 @@ public class GameServer
                     gc.Socket?.Send(sendBytes);
                 });
             }
-
-            return true;
         }
         catch (Exception e)
         {
             socket.Close();
             clientManager.DropClient(socket);
             logger.Warning("serve loop exception: {0}", e);
-            return false;
         }
     }
 }

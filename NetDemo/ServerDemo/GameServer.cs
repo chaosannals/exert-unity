@@ -23,7 +23,8 @@ class GameServer
     }
 
 
-    public void Serve()
+    public async Task Serve()
+    //public void Serve()
     {
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         var ipAddress = IPAddress.Parse(Host);
@@ -59,10 +60,8 @@ class GameServer
                 if (checkRead.Count > 0)
                 {
                     Socket.Select(checkRead, null, null, 1000);
-                    foreach (var cr in checkRead)
-                    {
-                        ReadFromClient(cr);
-                    }
+                    await Parallel.ForEachAsync(checkRead, ReadFromClient);
+                    //Parallel.ForEach(checkRead, ReadFromClient);
                 }
                 else
                 {
@@ -76,6 +75,10 @@ class GameServer
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="ar"></param>
     public void OnAccept(IAsyncResult ar)
     {
         var socket = ar.AsyncState as Socket;
@@ -92,20 +95,21 @@ class GameServer
     /// </summary>
     /// <param name="socket"></param>
     /// <returns></returns>
-    public bool ReadFromClient(Socket socket)
+    public async ValueTask ReadFromClient(Socket socket, CancellationToken cancellationToken)
+    //public void ReadFromClient(Socket socket)
     {
         var state = clients[socket];
         
         try
         {
-            int count = socket.Receive(state.Buffer);
+            int count = await socket.ReceiveAsync(state.Buffer, SocketFlags.None);
+            //int count = socket.Receive(state.Buffer);
             if (count == 0)
             {
                 socket.Close();
                 GameClientState? gcs;
                 clients.Remove(socket, out gcs);
                 Log.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
-                return false;
             }
 
             var m = state.Reader.Read(state.Buffer, 0, count);
@@ -114,8 +118,6 @@ class GameServer
             {
                 Dispatch(state, m);
             }
-
-            return true;
         }
         catch (Exception e)
         {
@@ -123,7 +125,6 @@ class GameServer
             GameClientState? gcs;
             clients.Remove(socket, out gcs);
             Log.Warning("serve loop exception: {0}", e);
-            return false;
         }
     }
 

@@ -7,7 +7,7 @@ Console.WriteLine("Client Auto !");
 // 因为 demo 是和服务器一起启动，所以先等待服务器初始化完成。
 Thread.Sleep(4000);
 
-var clients = Enumerable.Range(1, 4)
+var clients = Enumerable.Range(1, 444)
     //.AsParallel()
     .ToDictionary(i => i, i => 
     {

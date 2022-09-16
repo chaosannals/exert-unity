@@ -16,6 +16,6 @@ public class GameMain
     public void Run()
     {
         logger.Information("run");
-        server.Serve();
+        server.Serve().Wait();
     }
 }

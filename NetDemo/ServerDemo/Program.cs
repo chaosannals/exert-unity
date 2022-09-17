@@ -20,7 +20,7 @@ try
     Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
         .WriteTo.File(
-            path: path?.ToString() ?? "Logs/S-{Date}.log",
+            path: path?.Value ?? "Logs/S-{Date}.log",
             rollingInterval: RollingInterval.Day,
             rollOnFileSizeLimit: true,
             fileSizeLimitBytes: 2000000,

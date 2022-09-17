@@ -25,11 +25,12 @@ ioc.AddDbContext<DemoDbContext>(opb =>
 });
 ioc.AddSingleton<ILogger>(op =>
 {
-    var path = cnf.GetRequiredSection("Logger:PathFormat");
-    return new LoggerConfiguration()
+    var path = cnf.GetRequiredSection("Logger:PathFormat")?.Value ?? "Logs/S-.log";
+
+    var logger = new LoggerConfiguration()
         .MinimumLevel.Information()
         .WriteTo.File(
-                path: path?.ToString() ?? "Logs/S-{Date}.log",
+                path: path,
                 rollingInterval: RollingInterval.Day,
                 rollOnFileSizeLimit: true,
                 fileSizeLimitBytes: int.Parse(cnf.GetSection("Logger:FileSizeLimitBytes")?.Value ?? "2000000"),
@@ -39,6 +40,8 @@ ioc.AddSingleton<ILogger>(op =>
             )
             .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
             .CreateLogger();
+    logger.Information("log path: {0}", path);
+    return logger;
 });
 
 ioc.AddSingleton<INetPackDispatcher>(op => new DemoDispatcher());

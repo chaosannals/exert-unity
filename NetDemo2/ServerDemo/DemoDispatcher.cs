@@ -23,7 +23,11 @@ public class DemoDispatcher : INetPackDispatcher
 
     public void Dispatch(INetPackClient client, NetPack m)
     {
-
+        switch (m.Kind)
+        {
+            case nameof(DemoClient):
+                break;
+        }
     }
 
     public INetPackClient NewClient(Socket socket)

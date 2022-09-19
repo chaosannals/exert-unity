@@ -45,35 +45,51 @@ class GameServer
 
         try
         {
-            socket.BeginAccept(OnAccept, socket);
+            //socket.BeginAccept(OnAccept, socket);
 
-            var checkRead = new List<Socket>();
-
-            while (true)
+            await Parallel.ForEachAsync(new List<Task>
             {
-                checkRead.Clear();
-                foreach (var cs in clients.Values)
-                {
-                    checkRead.Add(cs.Socket!);
-                }
-
-                if (checkRead.Count > 0)
-                {
-                    Socket.Select(checkRead, null, null, 1000);
-                    await Parallel.ForEachAsync(checkRead, ReadFromClient);
-                    //Parallel.ForEach(checkRead, ReadFromClient);
-                }
-                else
-                {
-                    Thread.Yield();
-                }
-            }
+                AcceptAsync(socket),
+                ReceiveAsync(),
+            }, async (t, c) => await t);
         }
         catch (Exception e)
         {
             Log.Information("{0}", e);
         }
     }
+
+    public async Task AcceptAsync(Socket socket)
+    {
+        while(true)
+        {
+            var client = await socket.AcceptAsync();
+            var state = new GameClientState();
+            state.Socket = client;
+            clients.TryAdd(client, state);
+            Log.Information("[{0}] accept: {1}", clients.Count, client.RemoteEndPoint);
+        }
+    }
+
+    public async Task ReceiveAsync()
+    {
+        while (true)
+        {
+            var checkRead = clients.Values.Select(cs => cs.Socket!).ToList();
+
+            if (checkRead.Count > 0)
+            {
+                Socket.Select(checkRead, null, null, 1000);
+                await Parallel.ForEachAsync(checkRead, ReadFromClient);
+                //Parallel.ForEach(checkRead, ReadFromClient);
+            }
+            else
+            {
+                await Task.Yield();
+            }
+        }
+    }
+
 
     /// <summary>
     /// 

@@ -28,7 +28,7 @@ var clients = Enumerable.Range(1, 444)
             }
         };
         r.Connect();
-        Thread.Sleep(100);
+        Thread.Sleep(10);
         return r;
     });
 

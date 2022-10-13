@@ -11,7 +11,6 @@ public class GameServer
     private GameRoomManager roomManager;
     private GamePlayerManager playerManager;
     private GameClientManager clientManager;
-    private ILogger logger;
 
     public string Host { get; init; }
     public int Port { get; init; }
@@ -21,7 +20,7 @@ public class GameServer
         GameRoomManager roomManager,
         GamePlayerManager playerManager,
         GameClientManager clientManager,
-        ILogger logger,
+        //ILogger logger,
         string host="0.0.0.0"
     )
     {
@@ -30,7 +29,6 @@ public class GameServer
         this.roomManager = roomManager;
         this.playerManager = playerManager;
         this.clientManager = clientManager;
-        this.logger = logger;
     }
 
     /// <summary>
@@ -45,13 +43,13 @@ public class GameServer
         socket.Bind(ipEndPoint);
         socket.Listen(0);
 
-        logger.Information("listen: {0}", socket.LocalEndPoint);
+        //logger.Information("listen: {0}", socket.LocalEndPoint);
         var ipEntry = Dns.GetHostEntry(Dns.GetHostName());
         foreach (var ip in ipEntry.AddressList)
         {
             if (ip.AddressFamily == AddressFamily.InterNetwork)
             {
-                logger.Information("listen: {0}:{1}", ip, Port);
+                //logger.Information("listen: {0}:{1}", ip, Port);
             }
         }
 
@@ -97,7 +95,7 @@ public class GameServer
             {
                 socket.Close();
                 clientManager.DropClient(socket);
-                logger.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
+                //logger.Warning("client {0} read 0 bytes.", socket.RemoteEndPoint);
             }
 
             var m = state.Reader.Read(state.Buffer, 0, count);
@@ -116,7 +114,7 @@ public class GameServer
         {
             socket.Close();
             clientManager.DropClient(socket);
-            logger.Warning("serve loop exception: {0}", e);
+            //logger.Warning("serve loop exception: {0}", e);
         }
     }
 }

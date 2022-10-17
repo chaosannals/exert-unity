@@ -1,65 +1,35 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog.Events;
-using Serilog;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using NetPackKit;
 using ServerDemo;
-using System.Net.Sockets;
-using System.Net;
+using ServerDemo.Services;
 
-var ioc = new ServiceCollection();
-var cb = new ConfigurationBuilder();
-var cnf = cb.SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-    .Add(new JsonConfigurationSource
+var host = Host.CreateDefaultBuilder(args)
+    .UseConsoleLifetime()
+    .ConfigureHostConfiguration(cd =>
     {
-        Path = "appsettings.json",
-        ReloadOnChange = true,
-    }).Build();
-ioc.AddSingleton(op => cnf);
-ioc.AddDbContext<DemoDbContext>(opb =>
-{
-    var connetionString = cnf.GetConnectionString("Main");
-    opb.UseMySQL(connetionString);
-});
-ioc.AddSingleton<ILogger>(op =>
-{
-    var path = cnf.GetRequiredSection("Logger:PathFormat")?.Value ?? "Logs/S-.log";
-
-    var logger = new LoggerConfiguration()
-        .MinimumLevel.Information()
-        .WriteTo.File(
-                path: path,
-                rollingInterval: RollingInterval.Day,
-                rollOnFileSizeLimit: true,
-                fileSizeLimitBytes: int.Parse(cnf.GetSection("Logger:FileSizeLimitBytes")?.Value ?? "2000000"),
-                retainedFileCountLimit: int.Parse(cnf.GetSection("Logger:RetainedFileCountLimit")?.Value ?? "31"),
-                flushToDiskInterval: TimeSpan.FromSeconds(10),
-                outputTemplate: cnf.GetSection("Logger:OutputTemplate")?.Value ?? "[{Timestamp:yy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
-            )
-            .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-            .CreateLogger();
-    logger.Information("log path: {0}", path);
-    return logger;
-});
-
-ioc.AddSingleton<INetPackDispatcher>(op => new DemoDispatcher());
-ioc.AddSingleton(op =>
-{
-    var dispatcher = op.GetRequiredService<INetPackDispatcher>();
-    return new NetPackServer(dispatcher, 44444);
-});
-
-var provider = ioc.BuildServiceProvider();
-var server = provider.GetRequiredService<NetPackServer>();
-var logger = provider.GetRequiredService<ILogger>();
-var ipEntry = Dns.GetHostEntry(Dns.GetHostName());
-foreach (var ip in ipEntry.AddressList)
-{
-    if (ip.AddressFamily == AddressFamily.InterNetwork)
+        cd.SetBasePath(Directory.GetCurrentDirectory());
+        cd.AddEnvironmentVariables(prefix: "NET_DEMO_2_");
+    })
+    .ConfigureLogging((hc, cl) =>
     {
-        logger.Information("listen: {0}:{1}", ip, server.Port);
-    }
-}
-server.Serve().Wait();
+        cl.AddFile(hc.Configuration.GetSection("LoggingFile"));
+        cl.AddConsole();
+        cl.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+    })
+    .ConfigureServices((hc, services) =>
+    {
+        services.AddDbContext<DemoDbContext>(opb =>
+        {
+            var connetionString = hc.Configuration.GetConnectionString("Main");
+            opb.UseMySQL(connetionString);
+        });
+        services.AddSingleton<INetPackDispatcher>(op => new DemoDispatcher());
+        services.AddHostedService<TcpService>();
+    })
+    .Build();
+
+host.Run();

@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NetPackKit;
 
@@ -28,7 +23,7 @@ public class NetPackServer
         Dispatcher = dispatcher;
     }
 
-    public async Task Serve()
+    public async Task ServeAsync(CancellationToken cancellationToken)
     {
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         var ipAddress = IPAddress.Parse(Host);
@@ -50,11 +45,11 @@ public class NetPackServer
             if (checkRead.Count > 0)
             {
                 Socket.Select(checkRead, null, null, 1000);
-                await Parallel.ForEachAsync(checkRead, ReadFromClient);
+                await Parallel.ForEachAsync(checkRead, cancellationToken, ReadFromClient);
             }
             else
             {
-                Thread.Yield();
+                await Task.Yield();
             }
         }
     }
@@ -86,7 +81,7 @@ public class NetPackServer
 
             var m = await client!.ReceiveAsync(async (buffer) =>
             {
-                int count = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                int count = await socket.ReceiveAsync(buffer, SocketFlags.None, cancellationToken);
                 if (count == 0)
                 {
                     socket.Close();

@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CommonDemo\CommonDemo.csproj" />
     <ProjectReference Include="..\NetPackKit\NetPackKit.csproj" />
   </ItemGroup>
 
